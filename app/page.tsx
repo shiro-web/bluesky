@@ -1,39 +1,40 @@
 "use client"
 
-import React, { useRef } from "react";
+import React, { useState } from "react";
 import { BskyAgent } from "@atproto/api";
 import styles from "./page.module.css";
-const bskyServer = "https://bsky.social";
-const postBsky = async (text: string | undefined) => {  
+import PostForm from "./components/PostForm";
+export default async function Home() {
+  const bskyServer = "https://api.bsky.app";
   const agent = new BskyAgent({ service: bskyServer });
-
-  await agent.login({
-    identifier: process.env.NEXT_PUBLIC_BSKY_ID ?? "",
-    password: process.env.NEXT_PUBLIC_BSKY_PASSWORD ?? "",
-  });
-
-  await agent.post({
-    text: text,
-    langs: ["ja"]
-  });
   
-};
-export default function Home() {
-  const textRef = useRef<HTMLTextAreaElement | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await postBsky(textRef.current?.value);
-  };
+const [newOrder,setNewOrder] = useState(true);
   
+  const authorFeed = await agent.app.bsky.feed.getAuthorFeed({
+    actor: 'nuneno46.bsky.social',
+  })
+
+  const handleChangeArrangement = () => {
+    setNewOrder(!newOrder)
+  }
+
+  console.log(newOrder)
   return (
     <div>
-      <form onSubmit={handleSubmit}>
-        <textarea
-          ref={textRef}
-        ></textarea>
-        <button>送信</button>
-      </form>
+      <PostForm/>
+      <ol>
+        <p>ポスト一覧</p>
+        <button onClick={handleChangeArrangement}>古い順</button>
+        {newOrder
+        ? 
+       (authorFeed.data.feed.map(({ post }) => (
+        <li key={post.cid}>{post.record.text}</li>
+      )))
+      :
+      (authorFeed.data.feed.reverse().map(({ post }) => (
+        <li key={post.cid}>{post.record.text}</li>
+      )))}
+    </ol>
     </div>
   );
 }
